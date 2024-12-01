@@ -1,5 +1,5 @@
-from lib204 import Encoding, proposition, constraint
-
+from bauhaus import Encoding, proposition, constraint, And, Or
+from bauhaus.utils import count_solutions, likelihood
 
 
 # Initialize encoding
