@@ -1,4 +1,4 @@
-
+#lucas was here
 from bauhaus import Encoding, proposition, constraint, And, Or
 from bauhaus.utils import count_solutions, likelihood
 
