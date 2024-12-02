@@ -62,30 +62,30 @@ def define_movement_constraints(grid_size, cars, barriers):
     for car in cars:
         if car.orientation == 1:  # Horizontal car
             # Check the row for escape paths
-            left_clear = constraint.And([~Barrier(x, car.y) for x in range(0, car.x)])
-            right_clear = constraint.And([~Barrier(x, car.y) for x in range(car.x + 1, grid_size)])
+            left_clear = And([~Barrier(x, car.y) for x in range(0, car.x)])
+            right_clear = And([~Barrier(x, car.y) for x in range(car.x + 1, grid_size)])
             E.add_constraint(CarEscape(car.car_id) >> (left_clear | right_clear))
 
             # Blocking constraints
-            left_blocked = constraint.Or([CarPosition(blocking_car.car_id, x, car.y)
+            left_blocked = Or([CarPosition(blocking_car.car_id, x, car.y)
                                           for blocking_car in cars if blocking_car != car
                                           for x in range(0, car.x)])
-            right_blocked = constraint.Or([CarPosition(blocking_car.car_id, x, car.y)
+            right_blocked = Or([CarPosition(blocking_car.car_id, x, car.y)
                                            for blocking_car in cars if blocking_car != car
                                            for x in range(car.x + 1, grid_size)])
             E.add_constraint(BlockedState(car.car_id) >> (left_blocked & right_blocked))
 
         else:  # Vertical car
             # Check the column for escape paths
-            up_clear = constraint.And([~Barrier(car.x, y) for y in range(0, car.y)])
-            down_clear = constraint.And([~Barrier(car.x, y) for y in range(car.y + 1, grid_size)])
+            up_clear = And([~Barrier(car.x, y) for y in range(0, car.y)])
+            down_clear = And([~Barrier(car.x, y) for y in range(car.y + 1, grid_size)])
             E.add_constraint(CarEscape(car.car_id) >> (up_clear | down_clear))
 
             # Blocking constraints
-            up_blocked = constraint.Or([CarPosition(blocking_car.car_id, car.x, y)
+            up_blocked = Or([CarPosition(blocking_car.car_id, car.x, y)
                                         for blocking_car in cars if blocking_car != car
                                         for y in range(0, car.y)])
-            down_blocked = constraint.Or([CarPosition(blocking_car.car_id, car.x, y)
+            down_blocked = Or([CarPosition(blocking_car.car_id, car.x, y)
                                           for blocking_car in cars if blocking_car != car
                                           for y in range(car.y + 1, grid_size)])
             E.add_constraint(BlockedState(car.car_id) >> (up_blocked & down_blocked))
@@ -96,10 +96,10 @@ def is_winnable(cars):
     Add constraints for determining if the game state is winnable.
     """
     # The game is winnable if all cars can escape
-    E.add_constraint(constraint.And([CarEscape(car.car_id) for car in cars]))
+    E.add_constraint(And([CarEscape(car.car_id) for car in cars]))
 
     # The game is losing if any car is blocked on both sides
-    E.add_constraint(~constraint.Or([BlockedState(car.car_id) for car in cars]))
+    E.add_constraint(~Or([BlockedState(car.car_id) for car in cars]))
 
 
 def display_grid(grid, cars, barriers):
