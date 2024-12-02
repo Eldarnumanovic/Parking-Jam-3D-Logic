@@ -13,7 +13,8 @@ E = Encoding()
 CAR_ORIENTATIONS = [0, 1] #0 for NS, 1 for EW
 
 
-LOCATIONS = []
+CAR_LOCATIONS = []
+BARRIER_LOCATIONS = []
 LOCATION_GRID = {}
 
 
