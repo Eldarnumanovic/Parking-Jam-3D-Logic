@@ -54,16 +54,16 @@ class Car:
     def __repr__(self):
         return f"Car({self.car_id}, x={self.x}, y={self.y}, orientation={'Horizontal' if self.orientation else 'Vertical'})"
 
-
+"""
 def define_movement_constraints(grid_size, cars, barriers):
     for car in cars:
         if car.orientation == 1:  # Horizontal car
-            # Check the row for escape paths
+            # Define escape paths
             left_clear = And([~Barrier(x, car.y) for x in range(0, car.x)])
             right_clear = And([~Barrier(x, car.y) for x in range(car.x + 1, grid_size)])
             E.add_constraint(CarEscape(car.car_id) >> Or([left_clear, right_clear]))
 
-            # Blocking constraints
+            # Define blocking constraints
             left_blocked = Or([CarPosition(blocking_car.car_id, x, car.y)
                                for blocking_car in cars if blocking_car != car
                                for x in range(0, car.x)])
@@ -74,20 +74,25 @@ def define_movement_constraints(grid_size, cars, barriers):
             E.add_constraint(BlockedState(car.car_id) >> left_right_blocked)
 
         else:  # Vertical car
-            # Check the column for escape paths
+            # Define escape paths
             up_clear = And([~Barrier(car.x, y) for y in range(0, car.y)])
             down_clear = And([~Barrier(car.x, y) for y in range(car.y + 1, grid_size)])
             E.add_constraint(CarEscape(car.car_id) >> Or([up_clear, down_clear]))
 
-            # Blocking constraints
+            # Define blocking constraints
             up_blocked = Or([CarPosition(blocking_car.car_id, car.x, y)
                              for blocking_car in cars if blocking_car != car
                              for y in range(0, car.y)])
             down_blocked = Or([CarPosition(blocking_car.car_id, car.x, y)
                                for blocking_car in cars if blocking_car != car
                                for y in range(car.y + 1, grid_size)])
+            
+            # Process the And construct into a single proposition
             up_down_blocked = And([up_blocked, down_blocked])
             E.add_constraint(BlockedState(car.car_id) >> up_down_blocked)
+
+"""
+
 
 
 
@@ -156,22 +161,22 @@ if __name__ == "__main__":
     grid_size = 4
 
     # Generate random board
-    grid, cars, barriers = generate_random_board(size=grid_size, num_cars=3, num_barriers=2)
+    grid, cars, barriers = generate_random_board(size=grid_size, num_cars=3, num_barriers=4)
 
     # Display the initial grid
     print("Initial Grid:")
     display_grid(grid, cars, barriers)
 
     # Define movement constraints
-    define_movement_constraints(grid_size, cars, barriers)
+    #define_movement_constraints(grid_size, cars, barriers)
 
     # Add winnability constraints
     is_winnable(cars)
 
     # Compile encoding
-    T = E.compile()
+    #T = E.compile()
 
     # Check satisfiability
-    print("Satisfiable:", T.satisfiable())
-    print("Number of solutions:", count_solutions(T))
-    print("Solution:", T.solve())
+    #print("Satisfiable:", T.satisfiable())
+    #print("Number of solutions:", count_solutions(T))
+    #print("Solution:", T.solve())
