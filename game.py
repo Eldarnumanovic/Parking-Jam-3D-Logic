@@ -1,5 +1,5 @@
-from bauhaus import Encoding, proposition, constraint, And, Or
-from bauhaus.utils import count_solutions, likelihood
+from bauhaus import *
+from bauhaus.utils import *
 
 
 # Initialize encoding
@@ -56,39 +56,39 @@ class Car:
 
 
 def define_movement_constraints(grid_size, cars, barriers):
-    """
-    Define movement constraints for cars based on their orientation.
-    """
     for car in cars:
         if car.orientation == 1:  # Horizontal car
             # Check the row for escape paths
             left_clear = And([~Barrier(x, car.y) for x in range(0, car.x)])
             right_clear = And([~Barrier(x, car.y) for x in range(car.x + 1, grid_size)])
-            E.add_constraint(CarEscape(car.car_id) >> (left_clear | right_clear))
+            E.add_constraint(CarEscape(car.car_id) >> Or([left_clear, right_clear]))
 
             # Blocking constraints
             left_blocked = Or([CarPosition(blocking_car.car_id, x, car.y)
-                                          for blocking_car in cars if blocking_car != car
-                                          for x in range(0, car.x)])
+                               for blocking_car in cars if blocking_car != car
+                               for x in range(0, car.x)])
             right_blocked = Or([CarPosition(blocking_car.car_id, x, car.y)
-                                           for blocking_car in cars if blocking_car != car
-                                           for x in range(car.x + 1, grid_size)])
-            E.add_constraint(BlockedState(car.car_id) >> (left_blocked & right_blocked))
+                                for blocking_car in cars if blocking_car != car
+                                for x in range(car.x + 1, grid_size)])
+            left_right_blocked = And([left_blocked, right_blocked])
+            E.add_constraint(BlockedState(car.car_id) >> left_right_blocked)
 
         else:  # Vertical car
             # Check the column for escape paths
             up_clear = And([~Barrier(car.x, y) for y in range(0, car.y)])
             down_clear = And([~Barrier(car.x, y) for y in range(car.y + 1, grid_size)])
-            E.add_constraint(CarEscape(car.car_id) >> (up_clear | down_clear))
+            E.add_constraint(CarEscape(car.car_id) >> Or([up_clear, down_clear]))
 
             # Blocking constraints
             up_blocked = Or([CarPosition(blocking_car.car_id, car.x, y)
-                                        for blocking_car in cars if blocking_car != car
-                                        for y in range(0, car.y)])
+                             for blocking_car in cars if blocking_car != car
+                             for y in range(0, car.y)])
             down_blocked = Or([CarPosition(blocking_car.car_id, car.x, y)
-                                          for blocking_car in cars if blocking_car != car
-                                          for y in range(car.y + 1, grid_size)])
-            E.add_constraint(BlockedState(car.car_id) >> (up_blocked & down_blocked))
+                               for blocking_car in cars if blocking_car != car
+                               for y in range(car.y + 1, grid_size)])
+            up_down_blocked = And([up_blocked, down_blocked])
+            E.add_constraint(BlockedState(car.car_id) >> up_down_blocked)
+
 
 
 def is_winnable(cars):
