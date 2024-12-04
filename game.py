@@ -180,3 +180,7 @@ if __name__ == "__main__":
     #print("Satisfiable:", T.satisfiable())
     #print("Number of solutions:", count_solutions(T))
     #print("Solution:", T.solve())
+
+
+
+
