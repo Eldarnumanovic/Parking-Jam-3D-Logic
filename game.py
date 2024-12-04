@@ -5,6 +5,8 @@ from bauhaus.utils import *
 # Initialize encoding
 E = Encoding()
 
+DIRECTIONS = [['N','S'],['E','W']]
+               
 @proposition(E)
 class CarPosition:
     def __init__(self, car_id, x, y):
