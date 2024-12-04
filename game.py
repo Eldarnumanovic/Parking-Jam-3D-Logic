@@ -5,7 +5,7 @@ from bauhaus.utils import *
 # Initialize encoding
 E = Encoding()
 
-DIRECTIONS = [['N','S'],['E','W']]
+DIRECTIONS = ['NS','EW']
                
 # Define Propositions
 @proposition(E)
@@ -293,6 +293,9 @@ if __name__ == "__main__":
     # Display the initial grid
     print("Initial Grid:")
     display_grid(grid, cars, barriers)
+
+    print(cars)
+    print(barriers)
 
     # Define movement constraints
     #define_movement_constraints(grid_size, cars, barriers)
