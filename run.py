@@ -10,47 +10,6 @@ config.sat_backend = "kissat"
 # Encoding that will store all of your constraints
 E = Encoding()
 
-CAR_ORIENTATIONS = [0, 1] #0 for NS, 1 for EW
-
-
-CAR_LOCATIONS = []
-BARRIER_LOCATIONS = []
-LOCATION_GRID = {}
-
-
-# To create propositions, create classes for them first, annotated with "@proposition" and the Encoding
-
-"""
-@proposition(E)
-class BasicPropositions:
-
-    def __init__(self, data):
-        self.data = data
-
-    def _prop_name(self):
-        return f"A.{self.data}"
-"""
-
-# Different classes for propositions are useful because this allows for more dynamic constraint creation
-# for propositions within that class. For example, you can enforce that "at least one" of the propositions
-# that are instances of this class must be true by using a @constraint decorator.
-# other options include: at most one, exactly one, at most k, and implies all.
-# For a complete module reference, see https://bauhaus.readthedocs.io/en/latest/bauhaus.html
-
-
-"""
-@constraint.at_least_one(E)
-@proposition(E)
-class FancyPropositions:
-
-    def __init__(self, data):
-        self.data = data
-
-    def _prop_name(self):
-        return f"A.{self.data}"
-"""
-
-
 
 # Define Propositions
 @proposition(E)
@@ -196,6 +155,7 @@ class Car:
         self.x = x
         self.y = y
         self.orientation = orientation
+
     
     def __repr__(self):
         return f"Car({self.car_id}, x = {self.x}, y = {self.y}, orientation = {self.orientation})"
@@ -207,23 +167,7 @@ class Barrier:
 
     def __repr__(self):
         return f"Barrier({self.x}, {self.y})"
-
-
-
-
-"""
-# Call your variables whatever you want
-a = BasicPropositions("a")
-b = BasicPropositions("b")   
-c = BasicPropositions("c")
-d = BasicPropositions("d")
-e = BasicPropositions("e")
-# At least one of these will be true
-x = FancyPropositions("x")
-y = FancyPropositions("y")
-z = FancyPropositions("z")
-"""
-
+    
 
 
 # Build an example full theory for your setting and return it.
@@ -233,81 +177,59 @@ z = FancyPropositions("z")
 #  what the expectations are.
 def example_theory():
     """
-    # Add custom constraints by creating formulas with the variables you created. 
-    E.add_constraint((a | b) & ~x)
-    # Implication
-    E.add_constraint(y >> z)
-    # Negate a formula
-    E.add_constraint(~(x & y))
-    # You can also add more customized "fancy" constraints. Use case: you don't want to enforce "exactly one"
-    # for every instance of BasicPropositions, but you want to enforce it for a, b, and c.:
-    constraint.add_exactly_one(E, a, b, c)
-
-    return E
+    Define the constraints for the parking jam game, ensuring that the board state
+    determines if all cars can escape or if any car is completely blocked.
     """
-
+    # Constraint: A cell is empty if it contains neither a car nor a barrier
     for x in range(grid_size):
         for y in range(grid_size):
-            # A cell is empty if it contains neither a car nor a barrier
             E.add_constraint(Empty(x, y) >> (~CarAt(x, y) & ~BarrierAt(x, y)))
 
     for car in cars:
-        # Escape constraints for forwards and backwards
-        E.add_constraint(
-            EscapeForwards(car.car_id) >> And(
-                [Empty(car.x + i, car.y) for i in range(1, grid_size - car.x)]
-                if car.orientation == 'EW'
-                else [Empty(car.x, car.y - i) for i in range(1, car.y + 1)]
-            )
-        )
-        E.add_constraint(
-            EscapeBackwards(car.car_id) >> And(
-                [Empty(car.x - i, car.y) for i in range(1, car.x + 1)]
-                if car.orientation == 'EW'
-                else [Empty(car.x, car.y + i) for i in range(1, grid_size - car.y)]
-            )
-        )
+        if car.orientation == 'EW':
+            # Escape forward (right) and backward (left) constraints for EW cars
+            escape_right = And([~BarrierAt(car.x + i, car.y) for i in range(1, grid_size - car.x)])
+            escape_left = And([~BarrierAt(car.x - i, car.y) for i in range(1, car.x + 1)])
+            E.add_constraint(EscapeForwards(car.car_id) >> escape_right)
+            E.add_constraint(EscapeBackwards(car.car_id) >> escape_left)
 
-        # Barrier constraints
-        E.add_constraint(
-            BarrierAhead(car.car_id) >> Or(
-                [BarrierAt(car.x + 1, car.y)]
-                if car.orientation == 'EW'
-                else [BarrierAt(car.x, car.y - 1)]
-            )
-        )
-        E.add_constraint(
-            BarrierBehind(car.car_id) >> Or(
-                [BarrierAt(car.x - 1, car.y)]
-                if car.orientation == 'EW'
-                else [BarrierAt(car.x, car.y + 1)]
-            )
-        )
+            # Blocked state for EW cars: Barriers on both sides
+            barriers_left = And([BarrierAt(car.x - i, car.y) for i in range(1, car.x + 1)])
+            barriers_right = And([BarrierAt(car.x + i, car.y) for i in range(1, grid_size - car.x)])
+            fully_blocked = And(barriers_left, barriers_right)
+            E.add_constraint(fully_blocked >> ~EscapeForwards(car.car_id))
+            E.add_constraint(fully_blocked >> ~EscapeBackwards(car.car_id))
 
-        # Car constraints
-        E.add_constraint(
-            CarAhead(car.car_id) >> Or(
-                [CarAt(car.x + 1, car.y)]
-                if car.orientation == 'EW'
-                else [CarAt(car.x, car.y - 1)]
-            )
-        )
-        E.add_constraint(
-            CarBehind(car.car_id) >> Or(
-                [CarAt(car.x - 1, car.y)]
-                if car.orientation == 'EW'
-                else [CarAt(car.x, car.y + 1)]
-            )
-        )
+        elif car.orientation == 'NS':
+            # Escape forward (up) and backward (down) constraints for NS cars
+            escape_up = And([~BarrierAt(car.x, car.y - i) for i in range(1, car.y + 1)])
+            escape_down = And([~BarrierAt(car.x, car.y + i) for i in range(1, grid_size - car.y)])
+            E.add_constraint(EscapeForwards(car.car_id) >> escape_up)
+            E.add_constraint(EscapeBackwards(car.car_id) >> escape_down)
 
-    # Parking Jam constraint
-    E.add_constraint(
-        ParkingJam() >> Or(
-            [BarrierAhead(car.car_id) & BarrierBehind(car.car_id) for car in cars]
-        )
-    )
+            # Blocked state for NS cars: Barriers on both sides
+            barriers_up = And([BarrierAt(car.x, car.y - i) for i in range(1, car.y + 1)])
+            barriers_down = And([BarrierAt(car.x, car.y + i) for i in range(1, grid_size - car.y)])
+            fully_blocked = And(barriers_up, barriers_down)
+            E.add_constraint(fully_blocked >> ~EscapeForwards(car.car_id))
+            E.add_constraint(fully_blocked >> ~EscapeBackwards(car.car_id))
+
+    # Global Constraint: The board is a winning state if all cars can escape
+    all_cars_escape = And([EscapeForwards(car.car_id) | EscapeBackwards(car.car_id) for car in cars])
+    E.add_constraint(~ParkingJam() >> all_cars_escape)
+
+    # Global Constraint: The board is a losing state if any car is completely blocked by barriers
+    any_car_fully_blocked = Or([And([BarrierAt(car.x - i, car.y) for i in range(1, car.x + 1)]) &
+                                 And([BarrierAt(car.x + i, car.y) for i in range(1, grid_size - car.x)])
+                                 if car.orientation == 'EW'
+                                 else And([BarrierAt(car.x, car.y - i) for i in range(1, car.y + 1)]) &
+                                      And([BarrierAt(car.x, car.y + i) for i in range(1, grid_size - car.y)])
+                                 for car in cars])
+    E.add_constraint(ParkingJam() >> any_car_fully_blocked)
 
     return E
+
+
 
 def is_winning_state():
     # Compile constraints
@@ -317,7 +239,7 @@ def is_winning_state():
     # Check satisfiability
     if T.satisfiable():
         S = T.solve()
-        print("Winning State!")
+        
         print("Solution:", S)
 
         # Check escape conditions for all cars
@@ -332,19 +254,30 @@ def is_winning_state():
         print("No solution found. Not a winning state.")
         return False
 
+
+# docker build -t parking-jam-3d .
+# docker run -it --rm parking-jam-3d /bin/bash
+
 def display_grid(grid, cars, barriers):
     """
     Display the grid with car and barrier positions.
     """
+    for car in cars:
+        print(f"Processing Car: ID={car.car_id}, Orientation={car.orientation}")
     for y in range(len(grid)):
         row = []
         for x in range(len(grid[0])):
-            if any(c.x == x and c.y == y for c in cars):
-                row.append("C")
+            # Check if a car is at the current position
+            car_at_position = next((c for c in cars if c.x == x and c.y == y), None)
+            if car_at_position:
+                # Directly use the orientation from the car object
+                row.append(f"{car_at_position.car_id}{car_at_position.orientation}")
             elif any(b.x == x and b.y == y for b in barriers):
-                row.append("B")
+                # Add B for barriers
+                row.append(" B ")
             else:
-                row.append(".")
+                # Add . for empty spaces
+                row.append(" . ")
         print(" ".join(row))
     print()
 
@@ -380,28 +313,6 @@ def generate_random_board(size=4, num_cars=3, num_barriers=2):
 
 
 
-
-"""
-if __name__ == "__main__":
-
-    T = example_theory()
-    # Don't compile until you're finished adding all your constraints!
-    T = T.compile()
-    # After compilation (and only after), you can check some of the properties
-    # of your model:
-    print("\nSatisfiable: %s" % T.satisfiable())
-    print("# Solutions: %d" % count_solutions(T))
-    print("   Solution: %s" % T.solve())
-
-    print("\nVariable likelihoods:")
-    for v,vn in zip([a,b,c,x,y,z], 'abcxyz'):
-        # Ensure that you only send these functions NNF formulas
-        # Literals are compiled to NNF here
-        print(" %s: %.2f" % (vn, likelihood(T, v)))
-    print()
-"""
-
-
 # Example usage
 if __name__ == "__main__":
     import random
@@ -434,28 +345,3 @@ if __name__ == "__main__":
     #print("Solution:", T.solve())
     is_winning_state()
 
-
-
-"""
-# Example Usage
-if __name__ == "__main__":
-    grid_size = 4
-    cars = [
-        {"car_id": 1, "x": 1, "y": 1, "orientation": "EW"},
-        {"car_id": 2, "x": 2, "y": 3, "orientation": "NS"},
-    ]
-    barriers = [
-        {"x": 0, "y": 1},
-        {"x": 3, "y": 2},
-    ]
-
-    define_constraints(grid_size, cars, barriers)
-
-    # Compile encoding
-    T = E.compile()
-
-    # Check satisfiability
-    print("Satisfiable:", T.satisfiable())
-    print("Number of solutions:", count_solutions(T))
-    print("Solution:", T.solve())
-"""

@@ -17,7 +17,6 @@ RUN pip3 install --upgrade pip
 RUN pip3 install nnf
 RUN pip3 install bauhaus
 
-RUN chmod +x /PROJECT/nnf/bin/kissat
 
 # install dsharp to run in the container
 RUN curl https://mulab.ai/cisc-204/dsharp -o /usr/local/bin/dsharp
