@@ -10,11 +10,14 @@ RUN apt-get -yqq install python3-pip python3-dev curl gnupg build-essential vim 
 # copy our application code
 RUN mkdir /PROJECT
 WORKDIR /PROJECT
+COPY . /PROJECT
 
 # install required elements
 RUN pip3 install --upgrade pip
 RUN pip3 install nnf
 RUN pip3 install bauhaus
+
+RUN chmod +x /PROJECT/nnf/bin/kissat
 
 # install dsharp to run in the container
 RUN curl https://mulab.ai/cisc-204/dsharp -o /usr/local/bin/dsharp
