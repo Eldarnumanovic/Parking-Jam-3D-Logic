@@ -193,12 +193,14 @@ def example_theory():
             # Escape constraints for EW cars
             escape_right = And([~BarrierAt(car.x + i, car.y) for i in range(1, grid_size - car.x)])
             escape_left = And([~BarrierAt(car.x - i, car.y) for i in range(1, car.x + 1)])
+            
             E.add_constraint(EscapeForwards(car.car_id) >> escape_right)
             E.add_constraint(EscapeBackwards(car.car_id) >> escape_left)
 
             # Fully blocked state for EW cars
             barriers_left = And([BarrierAt(car.x - i, car.y) for i in range(1, car.x + 1)])
             barriers_right = And([BarrierAt(car.x + i, car.y) for i in range(1, grid_size - car.x)])
+            
             fully_blocked_by_barriers = And(barriers_left, barriers_right)
             E.add_constraint(fully_blocked_by_barriers >> ~EscapeForwards(car.car_id))
             E.add_constraint(fully_blocked_by_barriers >> ~EscapeBackwards(car.car_id))
@@ -207,12 +209,14 @@ def example_theory():
             # Escape constraints for NS cars
             escape_up = And([~BarrierAt(car.x, car.y - i) for i in range(1, car.y + 1)])
             escape_down = And([~BarrierAt(car.x, car.y + i) for i in range(1, grid_size - car.y)])
+            
             E.add_constraint(EscapeForwards(car.car_id) >> escape_up)
             E.add_constraint(EscapeBackwards(car.car_id) >> escape_down)
 
             # Fully blocked state for NS cars
             barriers_up = And([BarrierAt(car.x, car.y - i) for i in range(1, car.y + 1)])
             barriers_down = And([BarrierAt(car.x, car.y + i) for i in range(1, grid_size - car.y)])
+            
             fully_blocked_by_barriers = And(barriers_up, barriers_down)
             E.add_constraint(fully_blocked_by_barriers >> ~EscapeForwards(car.car_id))
             E.add_constraint(fully_blocked_by_barriers >> ~EscapeBackwards(car.car_id))
@@ -232,6 +236,7 @@ def example_theory():
     ])
 
     E.add_constraint(all_cars_escape)
+    
     E.add_constraint(~any_car_blocked)
 
     return E
