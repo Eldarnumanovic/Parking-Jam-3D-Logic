@@ -378,6 +378,60 @@ def generate_random_board(size, num_cars, num_barriers):
 
     return grid, cars, barriers
 
+def display_solution(grid, cars, barriers):
+    """
+    Display the solution of the game, showing step-by-step how cars escape the grid.
+    """
+    solution_found = False
+    while cars:
+        # Compile the theory to evaluate the current state
+        T = example_theory()
+        T = T.compile()
+        
+        if not T.satisfiable():
+            print("No solution found. This is not a winning state.")
+            return
+        
+        # Solve the SAT problem to get the state of propositions
+        S = T.solve()
+
+        # Find the first car that can escape
+        escaping_car = None
+        escape_direction = None
+        for car in cars:
+            if S.get(EscapeForwards(car.car_id), False):
+                escaping_car = car
+                escape_direction = "forwards"
+                break
+            elif S.get(EscapeBackwards(car.car_id), False):
+                escaping_car = car
+                escape_direction = "backwards"
+                break
+        
+        # If no car can escape, it's not a winning state
+        if not escaping_car:
+            print("No car can escape. This is not a winning state.")
+            return
+        
+        # Remove the escaping car from the grid and update propositions
+        print(f"Car {escaping_car.car_id} has exited {escape_direction}.")
+        cars.remove(escaping_car)
+        for x in range(grid_size):
+            for y in range(grid_size):
+                if grid[y][x] == escaping_car.car_id:
+                    grid[y][x] = 0  # Mark the cell as empty
+
+        # Display the updated grid
+        print("Updated Grid:")
+        display_grid(grid, cars, barriers)
+
+        # Set solution_found to True as a solution exists
+        solution_found = True
+
+    if solution_found:
+        print("All cars have escaped! Winning state achieved.")
+    else:
+        print("No cars were able to escape. Losing state.")
 
 
 # Example usage
@@ -412,6 +466,11 @@ if __name__ == "__main__":
     print("Initial Grid:")
     display_grid(grid, cars, barriers)# One car at (1,1) facing EW, Barriers block left and right
     is_winning_state()
+    # Display the solution if the state is winnable
+    if is_winning_state():
+        display_solution(grid, cars, barriers)
+    else:
+        print("This state is not winnable.")
 
     # Define movement constraints
     #define_movement_constraints(grid_size, cars, barriers)
