@@ -1,4 +1,3 @@
-#lucas was here
 from bauhaus import Encoding, proposition, constraint, And, Or
 from bauhaus.utils import count_solutions, likelihood
 
@@ -148,7 +147,8 @@ class ParkingJam:
 
     def _prop_name(self):
         return "ParkingJam"
-    
+
+@proposition(E)
 class Car:
     def __init__(self, car_id, x, y, orientation):
         self.car_id = car_id
@@ -157,15 +157,16 @@ class Car:
         self.orientation = orientation
 
     
-    def __repr__(self):
+    def _prop_name(self):
         return f"Car({self.car_id}, x = {self.x}, y = {self.y}, orientation = {self.orientation})"
-    
+
+@proposition(E)
 class Barrier:
     def __init__(self, x, y):
         self.x = x
         self.y = y
 
-    def __repr__(self):
+    def _prop_name(self):
         return f"Barrier({self.x}, {self.y})"
     
 
@@ -187,45 +188,49 @@ def example_theory():
 
     for car in cars:
         if car.orientation == 'EW':
-            # Escape forward (right) and backward (left) constraints for EW cars
+            # Escape constraints for EW cars
             escape_right = And([~BarrierAt(car.x + i, car.y) for i in range(1, grid_size - car.x)])
             escape_left = And([~BarrierAt(car.x - i, car.y) for i in range(1, car.x + 1)])
             E.add_constraint(EscapeForwards(car.car_id) >> escape_right)
             E.add_constraint(EscapeBackwards(car.car_id) >> escape_left)
 
-            # Blocked state for EW cars: Barriers on both sides
+            # Fully blocked state for EW cars
             barriers_left = And([BarrierAt(car.x - i, car.y) for i in range(1, car.x + 1)])
             barriers_right = And([BarrierAt(car.x + i, car.y) for i in range(1, grid_size - car.x)])
-            fully_blocked = And(barriers_left, barriers_right)
-            E.add_constraint(fully_blocked >> ~EscapeForwards(car.car_id))
-            E.add_constraint(fully_blocked >> ~EscapeBackwards(car.car_id))
+            fully_blocked_by_barriers = And(barriers_left, barriers_right)
+            E.add_constraint(fully_blocked_by_barriers >> ~EscapeForwards(car.car_id))
+            E.add_constraint(fully_blocked_by_barriers >> ~EscapeBackwards(car.car_id))
 
         elif car.orientation == 'NS':
-            # Escape forward (up) and backward (down) constraints for NS cars
+            # Escape constraints for NS cars
             escape_up = And([~BarrierAt(car.x, car.y - i) for i in range(1, car.y + 1)])
             escape_down = And([~BarrierAt(car.x, car.y + i) for i in range(1, grid_size - car.y)])
             E.add_constraint(EscapeForwards(car.car_id) >> escape_up)
             E.add_constraint(EscapeBackwards(car.car_id) >> escape_down)
 
-            # Blocked state for NS cars: Barriers on both sides
+            # Fully blocked state for NS cars
             barriers_up = And([BarrierAt(car.x, car.y - i) for i in range(1, car.y + 1)])
             barriers_down = And([BarrierAt(car.x, car.y + i) for i in range(1, grid_size - car.y)])
-            fully_blocked = And(barriers_up, barriers_down)
-            E.add_constraint(fully_blocked >> ~EscapeForwards(car.car_id))
-            E.add_constraint(fully_blocked >> ~EscapeBackwards(car.car_id))
+            fully_blocked_by_barriers = And(barriers_up, barriers_down)
+            E.add_constraint(fully_blocked_by_barriers >> ~EscapeForwards(car.car_id))
+            E.add_constraint(fully_blocked_by_barriers >> ~EscapeBackwards(car.car_id))
 
-    # Global Constraint: The board is a winning state if all cars can escape
+    # Define a winning state: All cars can escape
     all_cars_escape = And([EscapeForwards(car.car_id) | EscapeBackwards(car.car_id) for car in cars])
-    E.add_constraint(~ParkingJam() >> all_cars_escape)
 
-    # Global Constraint: The board is a losing state if any car is completely blocked by barriers
-    any_car_fully_blocked = Or([And([BarrierAt(car.x - i, car.y) for i in range(1, car.x + 1)]) &
-                                 And([BarrierAt(car.x + i, car.y) for i in range(1, grid_size - car.x)])
-                                 if car.orientation == 'EW'
-                                 else And([BarrierAt(car.x, car.y - i) for i in range(1, car.y + 1)]) &
-                                      And([BarrierAt(car.x, car.y + i) for i in range(1, grid_size - car.y)])
-                                 for car in cars])
-    E.add_constraint(ParkingJam() >> any_car_fully_blocked)
+    # Define a losing state: Any car is blocked on both sides by barriers
+    any_car_blocked = Or([
+        And([
+            And([BarrierAt(car.x - i, car.y) for i in range(1, car.x + 1)]),
+            And([BarrierAt(car.x + i, car.y) for i in range(1, grid_size - car.x)])
+        ]) if car.orientation == "EW" else And([
+            And([BarrierAt(car.x, car.y - i) for i in range(1, car.y + 1)]),
+            And([BarrierAt(car.x, car.y + i) for i in range(1, grid_size - car.y)])
+        ]) for car in cars
+    ])
+
+    E.add_constraint(all_cars_escape)
+    E.add_constraint(~any_car_blocked)
 
     return E
 
@@ -239,11 +244,21 @@ def is_winning_state():
     # Check satisfiability
     if T.satisfiable():
         S = T.solve()
-        
-        print("Solution:", S)
+        print("\nSAT Solver Solution:")
+        print("Escape Forward/Backward and Blocked States:")
+        for car in cars:
+            escape_forward = S.get(EscapeForwards(car.car_id), "Unknown")
+            escape_backward = S.get(EscapeBackwards(car.car_id), "Unknown")
+            car_at = S.get(CarAt(car.x, car.y), "Unknown")
+            print(f"Car {car.car_id}: Escape Forward: {escape_forward}, Escape Backward: {escape_backward}, CarAt: {car_at}")
 
-        # Check escape conditions for all cars
-        all_escaped = all(S[f"EscapeForwards({car.car_id})"] or S[f"EscapeBackwards({car.car_id})"] for car in cars)
+        print("\nBarrier States:")
+        for barrier in barriers:
+            barrier_at = S.get(BarrierAt(barrier.x, barrier.y), "Unknown")
+            print(f"Barrier at ({barrier.x}, {barrier.y}): {barrier_at}")
+
+        # Check if all cars can escape
+        all_escaped = all(S.get(EscapeForwards(car.car_id), False) or S.get(EscapeBackwards(car.car_id), False) for car in cars)
         if all_escaped:
             print("All cars can escape!")
             return True
@@ -284,8 +299,9 @@ def display_grid(grid, cars, barriers):
 
 def generate_random_board(size=4, num_cars=3, num_barriers=2):
     """
-    Generate a random board with cars and barriers.
+    Generate a random board with cars and barriers, and tie it to the propositions.
     """
+    global cars, barriers
     grid = [[0 for _ in range(size)] for _ in range(size)]
     cars = []
     barriers = []
@@ -294,10 +310,14 @@ def generate_random_board(size=4, num_cars=3, num_barriers=2):
     for car_id in range(1, num_cars + 1):
         while True:
             x, y = random.randint(0, size - 1), random.randint(0, size - 1)
-            orientation = random.choice(['NS', 'EW'])  # 0 for vertical, 1 for horizontal
+            orientation = random.choice(['NS', 'EW'])
             if grid[y][x] == 0:  # Empty cell
                 grid[y][x] = car_id
                 cars.append(Car(car_id, x, y, orientation))
+
+                # Add the car's position to the encoding
+                E.add_constraint(CarAt(x, y))
+                E.add_constraint(Orientation(car_id, orientation))
                 break
 
     # Add barriers
@@ -307,6 +327,9 @@ def generate_random_board(size=4, num_cars=3, num_barriers=2):
             if grid[y][x] == 0:  # Empty cell
                 grid[y][x] = -1
                 barriers.append(Barrier(x, y))
+
+                # Add the barrier's position to the encoding
+                E.add_constraint(BarrierAt(x, y))
                 break
 
     return grid, cars, barriers
@@ -315,6 +338,7 @@ def generate_random_board(size=4, num_cars=3, num_barriers=2):
 
 # Example usage
 if __name__ == "__main__":
+    
     import random
 
     # Define grid size
@@ -325,15 +349,37 @@ if __name__ == "__main__":
 
     # Display the initial grid
     print("Initial Grid:")
-    display_grid(grid, cars, barriers)
-
-    print(cars)
-    print(barriers)
+    display_grid(grid, cars, barriers)# One car at (1,1) facing EW, Barriers block left and right
+    is_winning_state()
 
     # Define movement constraints
     #define_movement_constraints(grid_size, cars, barriers)
-
+    """
     # Add winnability constraints
+    T = example_theory()
+    T = T.compile()
+
+
+
+    if T.satisfiable():
+        print("The board is solvable!")
+        # Get the solution
+        S = T.solve()
+    
+    # Print propositions related to barriers and cars
+    else:
+        print("The board is not solvable!")  
+
+    for car in cars:
+        print(f"Car {car.car_id}:")
+        print(f"  EscapeForwards: {S[EscapeForwards(car.car_id)]}")
+        print(f"  EscapeBackwards: {S[EscapeBackwards(car.car_id)]}")
+    
+    for car in cars:
+        print(f"CarAt({car.x}, {car.y}): {S[CarAt(car.x, car.y)]}")
+    # Check individual barriers
+    for barrier in barriers:
+            print(f"BarrierAt({barrier.x}, {barrier.y}): {S[BarrierAt(barrier.x, barrier.y)]}")
     
 
     # Compile encoding
@@ -344,4 +390,4 @@ if __name__ == "__main__":
     #print("Number of solutions:", count_solutions(T))
     #print("Solution:", T.solve())
     is_winning_state()
-
+"""

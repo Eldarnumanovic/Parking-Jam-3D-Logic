@@ -36,6 +36,6 @@ if T.satisfiable():
     print("The seating arrangement is satisfiable!")
     solution = T.solve()
     print("Solution:", solution)
-    print("Number of solutions:", count_solutions(T))
+    #print("Number of solutions:", count_solutions(T))
 else:
     print("No valid seating arrangement exists.")
