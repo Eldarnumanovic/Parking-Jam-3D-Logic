@@ -299,6 +299,43 @@ def display_grid(grid, cars, barriers):
     print()
 
 
+def generate_set_board(size, car_list, barrier_list):
+    """
+    Generate a board with a set list of cars and barriers, and tie it to the propositions.
+    """
+    global cars, barriers
+    grid = [[0 for _ in range(size)] for _ in range(size)]
+    cars = []
+    barriers = []
+
+    # Add cars from the provided car list
+    for car_data in car_list:
+        car_id, x, y, orientation = car_data
+        if grid[y][x] == 0:  # Ensure the cell is empty
+            grid[y][x] = car_id
+            new_car = Car(car_id, x, y, orientation)
+            cars.append(new_car)
+            
+            # Add the car's position and orientation to the encoding
+            E.add_constraint(CarAt(x, y))
+            E.add_constraint(Orientation(car_id, orientation))
+
+    # Add barriers from the provided barrier list
+    for barrier_data in barrier_list:
+        x, y = barrier_data
+        if grid[y][x] == 0:  # Ensure the cell is empty
+            grid[y][x] = -1
+            new_barrier = Barrier(x, y)
+            barriers.append(new_barrier)
+            
+
+            # Add the barrier's position to the encoding
+            E.add_constraint(BarrierAt(x, y))
+
+    return grid, cars, barriers
+
+
+
 def generate_random_board(size, num_cars, num_barriers):
     """
     Generate a random board with cars and barriers, and tie it to the propositions.
@@ -343,6 +380,7 @@ if __name__ == "__main__":
     
     import random
 
+    """
     # Define grid size
     grid_size = 5
     car_amt = 4
@@ -350,8 +388,22 @@ if __name__ == "__main__":
 
     # Generate random board
     grid, cars, barriers = generate_random_board(size=grid_size, num_cars = car_amt, num_barriers = barrier_amt)
-
+    """
+    grid_size = 4
+    carlis = [
+    (1, 0, 0, 'NS'),  # Car ID 1 at (0, 0) facing North-South
+    (2, 0, 2, 'EW'),  # Car ID 2 at (2, 1) facing East-West
+    (3, 3, 2, 'NS'),  # Car ID 3 at (3, 2) facing North-South
+    (4, 1, 3, 'EW')   # Car ID 4 at (1, 3) facing East-West
+    ]
+    barlis = [
+    (0, 1),  # Barrier at (0, 1)
+    (3, 1),  # Barrier at (3, 1)
+    (1, 2),  # Barrier at (1, 2)
+    (2, 3)   # Barrier at (2, 3)
+    ]
     # Display the initial grid
+    grid, cars, barriers = generate_set_board(size=grid_size, car_list = carlis, barrier_list = barlis)
     print("Initial Grid:")
     display_grid(grid, cars, barriers)# One car at (1,1) facing EW, Barriers block left and right
     is_winning_state()
