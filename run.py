@@ -170,6 +170,8 @@ class Barrier:
         return f"Barrier({self.x}, {self.y})"
     
 
+    
+
 
 # Build an example full theory for your setting and return it.
 #
@@ -297,7 +299,7 @@ def display_grid(grid, cars, barriers):
     print()
 
 
-def generate_random_board(size=4, num_cars=3, num_barriers=2):
+def generate_random_board(size, num_cars, num_barriers):
     """
     Generate a random board with cars and barriers, and tie it to the propositions.
     """
@@ -342,10 +344,12 @@ if __name__ == "__main__":
     import random
 
     # Define grid size
-    grid_size = 4
+    grid_size = 5
+    car_amt = 4
+    barrier_amt = 6
 
     # Generate random board
-    grid, cars, barriers = generate_random_board(size=grid_size, num_cars=3, num_barriers=4)
+    grid, cars, barriers = generate_random_board(size=grid_size, num_cars = car_amt, num_barriers = barrier_amt)
 
     # Display the initial grid
     print("Initial Grid:")
