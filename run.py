@@ -178,7 +178,7 @@ class Barrier:
 #  There should be at least 10 variables, and a sufficiently large formula to describe it (>50 operators).
 #  This restriction is fairly minimal, and if there is any concern, reach out to the teaching staff to clarify
 #  what the expectations are.
-def example_theory():
+def example_theory(grid_size, cars, barriers):
     """
     Define the constraints for the parking jam game, ensuring that the board state
     determines if all cars can escape or if any car is completely blocked.
@@ -225,27 +225,24 @@ def example_theory():
     all_cars_escape = And([EscapeForwards(car.car_id) | EscapeBackwards(car.car_id) for car in cars])
 
     # Define a losing state: Any car is blocked on both sides by barriers
-    any_car_blocked = Or([
-        And([
-            And([BarrierAt(car.x - i, car.y) for i in range(1, car.x + 1)]),
-            And([BarrierAt(car.x + i, car.y) for i in range(1, grid_size - car.x)])
-        ]) if car.orientation == "EW" else And([
-            And([BarrierAt(car.x, car.y - i) for i in range(1, car.y + 1)]),
-            And([BarrierAt(car.x, car.y + i) for i in range(1, grid_size - car.y)])
-        ]) for car in cars
-    ])
+    any_car_blocked = Or([And([
+        And([BarrierAt(car.x - i, car.y) for i in range(1, car.x + 1)]),
+        And([BarrierAt(car.x + i, car.y) for i in range(1, grid_size - car.x)])
+    ]) if car.orientation == "EW" else And([
+        And([BarrierAt(car.x, car.y - i) for i in range(1, car.y + 1)]),
+        And([BarrierAt(car.x, car.y + i) for i in range(1, grid_size - car.y)])
+    ]) for car in cars])
 
     E.add_constraint(all_cars_escape)
-    
     E.add_constraint(~any_car_blocked)
 
     return E
 
 
 
-def is_winning_state():
+def is_winning_state(grid_size, cars, barriers):
     # Compile constraints
-    T = example_theory()
+    T = example_theory(grid_size, cars, barriers)
     T = T.compile()
 
     # Check satisfiability
@@ -279,6 +276,7 @@ def is_winning_state():
 
 # docker build -t parking-jam-3d .
 # docker run -it --rm parking-jam-3d /bin/bash
+
 
 def display_grid(grid, cars, barriers):
     """
@@ -378,20 +376,19 @@ def generate_random_board(size, num_cars, num_barriers):
 
     return grid, cars, barriers
 
-def display_solution(grid, cars, barriers):
+def display_solution(grid, cars, barriers, grid_size):
     """
     Display the solution of the game, showing step-by-step how cars escape the grid.
     """
-    solution_found = False
     while cars:
         # Compile the theory to evaluate the current state
-        T = example_theory()
+        T = example_theory(grid_size, cars, barriers)
         T = T.compile()
-        
+
         if not T.satisfiable():
             print("No solution found. This is not a winning state.")
             return
-        
+
         # Solve the SAT problem to get the state of propositions
         S = T.solve()
 
@@ -407,12 +404,12 @@ def display_solution(grid, cars, barriers):
                 escaping_car = car
                 escape_direction = "backwards"
                 break
-        
+
         # If no car can escape, it's not a winning state
         if not escaping_car:
             print("No car can escape. This is not a winning state.")
             return
-        
+
         # Remove the escaping car from the grid and update propositions
         print(f"Car {escaping_car.car_id} has exited {escape_direction}.")
         cars.remove(escaping_car)
@@ -425,52 +422,43 @@ def display_solution(grid, cars, barriers):
         print("Updated Grid:")
         display_grid(grid, cars, barriers)
 
-        # Set solution_found to True as a solution exists
-        solution_found = True
-
-    if solution_found:
-        print("All cars have escaped! Winning state achieved.")
-    else:
-        print("No cars were able to escape. Losing state.")
+    # Print final message only once after all cars have exited
+    print("All cars have escaped! Winning state achieved.")
 
 
-# Example usage
 if __name__ == "__main__":
-    
     import random
 
-    """
-    # Define grid size
-    grid_size = 5
-    car_amt = 4
-    barrier_amt = 6
+    def main():
+        while True:
+            # Prompt user for grid size, number of cars, and barriers
+            grid_size = 4  # You can adjust this as needed
+            num_cars = 4  # Number of cars
+            num_barriers = 6  # Number of barriers
 
-    # Generate random board
-    grid, cars, barriers = generate_random_board(size=grid_size, num_cars = car_amt, num_barriers = barrier_amt)
-    """
-    grid_size = 4
-    carlis = [
-    (1, 0, 0, 'NS'),  # Car ID 1 at (0, 0) facing North-South
-    (2, 0, 2, 'EW'),  # Car ID 2 at (2, 1) facing East-West
-    (3, 3, 2, 'NS'),  # Car ID 3 at (3, 2) facing North-South
-    (4, 1, 3, 'EW')   # Car ID 4 at (1, 3) facing East-West
-    ]
-    barlis = [
-    (0, 1),  # Barrier at (0, 1)
-    (3, 1),  # Barrier at (3, 1)
-    (1, 2),  # Barrier at (1, 2)
-    (2, 3)   # Barrier at (2, 3)
-    ]
-    # Display the initial grid
-    grid, cars, barriers = generate_set_board(size=grid_size, car_list = carlis, barrier_list = barlis)
-    print("Initial Grid:")
-    display_grid(grid, cars, barriers)# One car at (1,1) facing EW, Barriers block left and right
-    is_winning_state()
-    # Display the solution if the state is winnable
-    if is_winning_state():
-        display_solution(grid, cars, barriers)
-    else:
-        print("This state is not winnable.")
+            # Generate random grid
+            grid, cars, barriers = generate_random_board(size=grid_size, num_cars=num_cars, num_barriers=num_barriers)
+
+            # Display the generated grid
+            print("Initial Grid:")
+            display_grid(grid, cars, barriers)
+
+            # Check if the generated grid is winnable
+            if is_winning_state(grid_size, cars, barriers):
+                # Display the solution if winnable
+                display_solution(grid, cars, barriers, grid_size)
+            else:
+                print("This state is not winnable.")
+
+            # Prompt the user to generate another random grid
+            user_input = input("\nDo you want to generate another random grid? (yes/no): ").strip().lower()
+            if user_input != "yes":
+                print("Exiting the program. Goodbye!")
+            break
+                
+    # Run the main function
+    main()
+
 
     # Define movement constraints
     #define_movement_constraints(grid_size, cars, barriers)
