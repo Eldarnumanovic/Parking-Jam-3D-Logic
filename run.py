@@ -264,7 +264,7 @@ def is_winning_state(grid_size, cars, barriers):
         # Check if all cars can escape
         all_escaped = all(S.get(EscapeForwards(car.car_id), False) or S.get(EscapeBackwards(car.car_id), False) for car in cars)
         if all_escaped:
-            print("All cars can escape!")
+            print("All cars can escape!\n")
             return True
         else:
             print("Not all cars can escape.")
@@ -447,7 +447,7 @@ def display_solution(grid, cars, barriers, grid_size):
             return
 
         # Remove the escaping car from the grid and update propositions
-        print(f"Car {escaping_car.car_id} has exited {escape_direction}.")
+        print(f"Car {escaping_car.car_id} has exited {escape_direction}.\n")
         cars.remove(escaping_car)
         for x in range(grid_size):
             for y in range(grid_size):
@@ -466,9 +466,9 @@ if __name__ == "__main__":
     def main():
         while True:
             # Prompt user for grid size, number of cars, and barriers
-            grid_size = 4  # You can adjust this as needed
-            num_cars = 4  # Number of cars
-            num_barriers = 6  # Number of barriers
+            grid_size = 10  # You can adjust this as needed
+            num_cars = 13  # Number of cars
+            num_barriers = 13  # Number of barriers
 
             # Generate random grid
             grid, cars, barriers = generate_random_board(size=grid_size, num_cars=num_cars, num_barriers=num_barriers)
