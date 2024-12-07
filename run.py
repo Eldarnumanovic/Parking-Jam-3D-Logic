@@ -470,6 +470,9 @@ if __name__ == "__main__":
             num_cars = 13  # Number of cars
             num_barriers = 13  # Number of barriers
 
+            if ((num_cars + num_barriers)>grid_size**2):
+                return ("Not enough spaces on grid for cars and barriers")
+
             # Generate random grid
             grid, cars, barriers = generate_random_board(size=grid_size, num_cars=num_cars, num_barriers=num_barriers)
 
