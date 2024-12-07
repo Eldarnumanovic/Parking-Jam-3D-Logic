@@ -89,64 +89,6 @@ class EscapeBackwards:
         return f"EscapeBackwards({self.car_id})"
 
 
-@proposition(E)
-class BarrierAhead:
-    def __init__(self, car_id):
-        """
-        Represents whether there is a barrier directly ahead of a car.
-        """
-        self.car_id = car_id
-
-    def _prop_name(self):
-        return f"BarrierAhead({self.car_id})"
-
-
-@proposition(E)
-class BarrierBehind:
-    def __init__(self, car_id):
-        """
-        Represents whether there is a barrier directly behind a car.
-        """
-        self.car_id = car_id
-
-    def _prop_name(self):
-        return f"BarrierBehind({self.car_id})"
-
-
-@proposition(E)
-class CarAhead:
-    def __init__(self, car_id):
-        """
-        Represents whether there is a car directly ahead of a car.
-        """
-        self.car_id = car_id
-
-    def _prop_name(self):
-        return f"CarAhead({self.car_id})"
-
-
-@proposition(E)
-class CarBehind:
-    def __init__(self, car_id):
-        """
-        Represents whether there is a car directly behind a car.
-        """
-        self.car_id = car_id
-
-    def _prop_name(self):
-        return f"CarBehind({self.car_id})"
-
-
-@proposition(E)
-class ParkingJam:
-    def __init__(self):
-        """
-        Represents whether the entire grid is in a parking jam state.
-        """
-        pass
-
-    def _prop_name(self):
-        return "ParkingJam"
 
 @proposition(E)
 class Car:
