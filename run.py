@@ -380,32 +380,68 @@ def display_solution(grid, cars, barriers, grid_size):
     """
     Display the solution of the game, showing step-by-step how cars escape the grid.
     """
+    iteration = 0
     while cars:
-        # Compile the theory to evaluate the current state
-        T = example_theory(grid_size, cars, barriers)
-        T = T.compile()
+        print(f"Iteration {iteration}:")
+        display_grid(grid, cars, barriers)
 
-        if not T.satisfiable():
-            print("No solution found. This is not a winning state.")
-            return
-
-        # Solve the SAT problem to get the state of propositions
-        S = T.solve()
-
-        # Find the first car that can escape
         escaping_car = None
         escape_direction = None
+
         for car in cars:
-            if S.get(EscapeForwards(car.car_id), False):
+            can_escape_forwards = True
+            can_escape_backwards = True
+
+            # Check forward and backward paths based on orientation
+            if car.orientation == 'EW':
+                # Check forward (right)
+                for i in range(1, grid_size - car.x):
+                    if any(b.x == car.x + i and b.y == car.y for b in barriers):
+                        can_escape_forwards = False
+                        break
+                    if any(c.x == car.x + i and c.y == car.y for c in cars):
+                        can_escape_forwards = False
+                        break
+
+                # Check backward (left)
+                for i in range(1, car.x + 1):
+                    if any(b.x == car.x - i and b.y == car.y for b in barriers):
+                        can_escape_backwards = False
+                        break
+                    if any(c.x == car.x - i and c.y == car.y for c in cars):
+                        can_escape_backwards = False
+                        break
+
+            elif car.orientation == 'NS':
+                # Check forward (up)
+                for i in range(1, car.y + 1):
+                    if any(b.x == car.x and b.y == car.y - i for b in barriers):
+                        can_escape_forwards = False
+                        break
+                    if any(c.x == car.x and c.y == car.y - i for c in cars):
+                        can_escape_forwards = False
+                        break
+
+                # Check backward (down)
+                for i in range(1, grid_size - car.y):
+                    if any(b.x == car.x and b.y == car.y + i for b in barriers):
+                        can_escape_backwards = False
+                        break
+                    if any(c.x == car.x and c.y == car.y + i for c in cars):
+                        can_escape_backwards = False
+                        break
+
+            # If a car can escape, choose the direction and break the loop
+            if can_escape_forwards:
                 escaping_car = car
                 escape_direction = "forwards"
                 break
-            elif S.get(EscapeBackwards(car.car_id), False):
+            elif can_escape_backwards:
                 escaping_car = car
                 escape_direction = "backwards"
                 break
 
-        # If no car can escape, it's not a winning state
+        # If no car can escape, it's a losing state
         if not escaping_car:
             print("No car can escape. This is not a winning state.")
             return
@@ -418,9 +454,7 @@ def display_solution(grid, cars, barriers, grid_size):
                 if grid[y][x] == escaping_car.car_id:
                     grid[y][x] = 0  # Mark the cell as empty
 
-        # Display the updated grid
-        print("Updated Grid:")
-        display_grid(grid, cars, barriers)
+        iteration += 1
 
     # Print final message only once after all cars have exited
     print("All cars have escaped! Winning state achieved.")
