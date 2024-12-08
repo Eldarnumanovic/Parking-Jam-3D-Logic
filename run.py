@@ -401,6 +401,8 @@ if __name__ == "__main__":
 
     def main():
         while True:
+            
+            # Uncomment this to use randomly generated grids
             """
             # Prompt user for grid size, number of cars, and barriers
             grid_size = 10  # You can adjust this as needed
@@ -416,7 +418,7 @@ if __name__ == "__main__":
 
 
             # Select an example by changing this variable manually
-            example_number = 3  # Change this number to 1, 2, 3, 4, or 5
+            example_number = 3  # Change this number to 1 - 10
 
             # Fetch the selected example
             selected_example = examples[example_number - 1]
