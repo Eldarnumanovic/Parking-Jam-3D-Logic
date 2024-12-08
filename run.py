@@ -1,13 +1,13 @@
 from bauhaus import Encoding, proposition, constraint, And, Or
-from bauhaus.utils import count_solutions, likelihood
+
 from examples import examples
 
-# These two lines make sure a faster SAT solver is used.
+ 
 from nnf import config
 config.sat_backend = "kissat"
 
 
-# Encoding that will store all of your constraints
+
 E = Encoding()
 
 
@@ -18,6 +18,7 @@ class Orientation:
         """
         Represents the orientation of a car.
         direction: 'NS' for North/South or 'EW' for East/West
+        
         """
         self.car_id = car_id
         self.direction = direction
