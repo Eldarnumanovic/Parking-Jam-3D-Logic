@@ -1,5 +1,6 @@
 from bauhaus import Encoding, proposition, constraint, And, Or
 from bauhaus.utils import count_solutions, likelihood
+from examples import examples
 
 # These two lines make sure a faster SAT solver is used.
 from nnf import config
@@ -190,14 +191,7 @@ def is_winning_state(grid_size, cars, barriers):
     # Check satisfiability
     if T.satisfiable():
         S = T.solve()
-        print("\nSAT Solver Solution:")
-        print("Escape Forward/Backward and Blocked States:")
-        for car in cars:
-            escape_forward = S.get(EscapeForwards(car.car_id), "Unknown")
-            escape_backward = S.get(EscapeBackwards(car.car_id), "Unknown")
-            car_at = S.get(CarAt(car.x, car.y), "Unknown")
-            print(f"Car {car.car_id}: Escape Forward: {escape_forward}, Escape Backward: {escape_backward}, CarAt: {car_at}")
-
+       
         print("\nBarrier States:")
         for barrier in barriers:
             barrier_at = S.get(BarrierAt(barrier.x, barrier.y), "Unknown")
@@ -407,6 +401,7 @@ if __name__ == "__main__":
 
     def main():
         while True:
+            """
             # Prompt user for grid size, number of cars, and barriers
             grid_size = 10  # You can adjust this as needed
             num_cars = 13  # Number of cars
@@ -417,6 +412,25 @@ if __name__ == "__main__":
 
             # Generate random grid
             grid, cars, barriers = generate_random_board(size=grid_size, num_cars=num_cars, num_barriers=num_barriers)
+            """
+
+
+            # Select an example by changing this variable manually
+            example_number = 3  # Change this number to 1, 2, 3, 4, or 5
+
+            # Fetch the selected example
+            selected_example = examples[example_number - 1]
+
+            # Extract data from the selected example
+            grid_size = selected_example["size"]
+            car_list = selected_example["car_list"]
+            barrier_list = selected_example["barrier_list"]
+
+            # Call the generate_set_board function with the selected example's data
+            grid, cars, barriers = generate_set_board(grid_size, car_list, barrier_list)
+
+
+
 
             # Display the generated grid
             print("Initial Grid:")
@@ -429,52 +443,6 @@ if __name__ == "__main__":
             else:
                 print("This state is not winnable.")
 
-            # Prompt the user to generate another random grid
-            user_input = input("\nDo you want to generate another random grid? (yes/no): ").strip().lower()
-            if user_input != "yes":
-                print("Exiting the program. Goodbye!")
-            break
                 
     # Run the main function
     main()
-
-
-    # Define movement constraints
-    #define_movement_constraints(grid_size, cars, barriers)
-    """
-    # Add winnability constraints
-    T = example_theory()
-    T = T.compile()
-
-
-
-    if T.satisfiable():
-        print("The board is solvable!")
-        # Get the solution
-        S = T.solve()
-    
-    # Print propositions related to barriers and cars
-    else:
-        print("The board is not solvable!")  
-
-    for car in cars:
-        print(f"Car {car.car_id}:")
-        print(f"  EscapeForwards: {S[EscapeForwards(car.car_id)]}")
-        print(f"  EscapeBackwards: {S[EscapeBackwards(car.car_id)]}")
-    
-    for car in cars:
-        print(f"CarAt({car.x}, {car.y}): {S[CarAt(car.x, car.y)]}")
-    # Check individual barriers
-    for barrier in barriers:
-            print(f"BarrierAt({barrier.x}, {barrier.y}): {S[BarrierAt(barrier.x, barrier.y)]}")
-    
-
-    # Compile encoding
-    T = example_theory()
-
-    # Check satisfiability
-    #print("Satisfiable:", T.satisfiable())
-    #print("Number of solutions:", count_solutions(T))
-    #print("Solution:", T.solve())
-    is_winning_state()
-"""
