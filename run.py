@@ -5,114 +5,112 @@ from bauhaus.utils import count_solutions, likelihood
 from nnf import config
 config.sat_backend = "kissat"
 
+import random
 
 # Encoding that will store all of your constraints
-E = Encoding()
+# E = Encoding()  # Removed global E usage
 
+# docker build -t parking-jam-3d .
+# docker run -it --rm parking-jam-3d /bin/bash
 
-# Define Propositions
-@proposition(E)
-class Orientation:
-    def __init__(self, car_id, direction):
-        """
-        Represents the orientation of a car.
-        direction: 'NS' for North/South or 'EW' for East/West
-        """
-        self.car_id = car_id
-        self.direction = direction
-
-    def _prop_name(self):
-        return f"Orientation({self.car_id},{self.direction})"
-
-
-@proposition(E)
-class CarAt:
-    def __init__(self, x, y):
-        """
-        Represents whether a car is at a specific location (x, y).
-        """
-        self.x = x
-        self.y = y
-
-    def _prop_name(self):
-        return f"CarAt({self.x},{self.y})"
-
-
-@proposition(E)
-class BarrierAt:
-    def __init__(self, x, y):
-        """
-        Represents whether a barrier is at a specific location (x, y).
-        """
-        self.x = x
-        self.y = y
-
-    def _prop_name(self):
-        return f"BarrierAt({self.x},{self.y})"
-
-
-# Constraints
-@proposition(E)
-class Empty:
-    def __init__(self, x, y):
-        """
-        Represents whether a location (x, y) is empty.
-        """
-        self.x = x
-        self.y = y
-
-    def _prop_name(self):
-        return f"Empty({self.x},{self.y})"
-
-
-@proposition(E)
-class EscapeForwards:
-    def __init__(self, car_id):
-        """
-        Represents whether a car can escape forwards.
-        """
-        self.car_id = car_id
-
-    def _prop_name(self):
-        return f"EscapeForwards({self.car_id})"
-
-
-@proposition(E)
-class EscapeBackwards:
-    def __init__(self, car_id):
-        """
-        Represents whether a car can escape backwards.
-        """
-        self.car_id = car_id
-
-    def _prop_name(self):
-        return f"EscapeBackwards({self.car_id})"
-
-
-
-@proposition(E)
-class Car:
-    def __init__(self, car_id, x, y, orientation):
-        self.car_id = car_id
-        self.x = x
-        self.y = y
-        self.orientation = orientation
-
+def define_propositions(enc):
+    # Define Propositions bound to a given encoding enc
     
-    def _prop_name(self):
-        return f"Car({self.car_id}, x = {self.x}, y = {self.y}, orientation = {self.orientation})"
+    @proposition(enc)
+    class Orientation:
+        def __init__(self, car_id, direction):
+            """
+            Represents the orientation of a car.
+            direction: 'NS' for North/South or 'EW' for East/West
+            """
+            self.car_id = car_id
+            self.direction = direction
 
-@proposition(E)
-class Barrier:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
+        def _prop_name(self):
+            return f"Orientation({self.car_id},{self.direction})"
 
-    def _prop_name(self):
-        return f"Barrier({self.x}, {self.y})"
-    
+    @proposition(enc)
+    class CarAt:
+        def __init__(self, x, y):
+            """
+            Represents whether a car is at a specific location (x, y).
+            """
+            self.x = x
+            self.y = y
 
-    
+        def _prop_name(self):
+            return f"CarAt({self.x},{self.y})"
+
+    @proposition(enc)
+    class BarrierAt:
+        def __init__(self, x, y):
+            """
+            Represents whether a barrier is at a specific location (x, y).
+            """
+            self.x = x
+            self.y = y
+
+        def _prop_name(self):
+            return f"BarrierAt({self.x},{self.y})"
+
+    # Constraints
+    @proposition(enc)
+    class Empty:
+        def __init__(self, x, y):
+            """
+            Represents whether a location (x, y) is empty.
+            """
+            self.x = x
+            self.y = y
+
+        def _prop_name(self):
+            return f"Empty({self.x},{self.y})"
+
+    @proposition(enc)
+    class EscapeForwards:
+        def __init__(self, car_id):
+            """
+            Represents whether a car can escape forwards.
+            """
+            self.car_id = car_id
+
+        def _prop_name(self):
+            return f"EscapeForwards({self.car_id})"
+
+    @proposition(enc)
+    class EscapeBackwards:
+        def __init__(self, car_id):
+            """
+            Represents whether a car can escape backwards.
+            """
+            self.car_id = car_id
+
+        def _prop_name(self):
+            return f"EscapeBackwards({self.car_id})"
+
+
+    @proposition(enc)
+    class Car:
+        def __init__(self, car_id, x, y, orientation):
+            self.car_id = car_id
+            self.x = x
+            self.y = y
+            self.orientation = orientation
+
+        
+        def _prop_name(self):
+            return f"Car({self.car_id}, x = {self.x}, y = {self.y}, orientation = {self.orientation})"
+
+    @proposition(enc)
+    class Barrier:
+        def __init__(self, x, y):
+            self.x = x
+            self.y = y
+
+        def _prop_name(self):
+            return f"Barrier({self.x}, {self.y})"
+
+    return Orientation, CarAt, BarrierAt, Empty, EscapeForwards, EscapeBackwards, Car, Barrier
 
 
 # Build an example full theory for your setting and return it.
@@ -120,15 +118,17 @@ class Barrier:
 #  There should be at least 10 variables, and a sufficiently large formula to describe it (>50 operators).
 #  This restriction is fairly minimal, and if there is any concern, reach out to the teaching staff to clarify
 #  what the expectations are.
-def example_theory(grid_size, cars, barriers):
+def example_theory(grid_size, cars, barriers, enc):
     """
     Define the constraints for the parking jam game, ensuring that the board state
     determines if all cars can escape or if any car is completely blocked.
     """
+    Orientation, CarAt, BarrierAt, Empty, EscapeForwards, EscapeBackwards, Car, Barrier = define_propositions(enc)
+
     # Constraint: A cell is empty if it contains neither a car nor a barrier
     for x in range(grid_size):
         for y in range(grid_size):
-            E.add_constraint(Empty(x, y) >> (~CarAt(x, y) & ~BarrierAt(x, y)))
+            enc.add_constraint(Empty(x, y) >> (~CarAt(x, y) & ~BarrierAt(x, y)))
 
     for car in cars:
         if car.orientation == 'EW':
@@ -136,32 +136,35 @@ def example_theory(grid_size, cars, barriers):
             escape_right = And([~BarrierAt(car.x + i, car.y) for i in range(1, grid_size - car.x)])
             escape_left = And([~BarrierAt(car.x - i, car.y) for i in range(1, car.x + 1)])
             
-            E.add_constraint(EscapeForwards(car.car_id) >> escape_right)
-            E.add_constraint(EscapeBackwards(car.car_id) >> escape_left)
+            enc.add_constraint(EscapeForwards(car.car_id) >> escape_right)
+            enc.add_constraint(EscapeBackwards(car.car_id) >> escape_left)
 
             # Fully blocked state for EW cars
             barriers_left = And([BarrierAt(car.x - i, car.y) for i in range(1, car.x + 1)])
             barriers_right = And([BarrierAt(car.x + i, car.y) for i in range(1, grid_size - car.x)])
             
             fully_blocked_by_barriers = And(barriers_left, barriers_right)
-            E.add_constraint(fully_blocked_by_barriers >> ~EscapeForwards(car.car_id))
-            E.add_constraint(fully_blocked_by_barriers >> ~EscapeBackwards(car.car_id))
+            enc.add_constraint(fully_blocked_by_barriers >> ~EscapeForwards(car.car_id))
+            enc.add_constraint(fully_blocked_by_barriers >> ~EscapeBackwards(car.car_id))
 
         elif car.orientation == 'NS':
             # Escape constraints for NS cars
             escape_up = And([~BarrierAt(car.x, car.y - i) for i in range(1, car.y + 1)])
             escape_down = And([~BarrierAt(car.x, car.y + i) for i in range(1, grid_size - car.y)])
             
-            E.add_constraint(EscapeForwards(car.car_id) >> escape_up)
-            E.add_constraint(EscapeBackwards(car.car_id) >> escape_down)
+            enc.add_constraint(EscapeForwards(car.car_id) >> escape_up)
+            enc.add_constraint(EscapeBackwards(car.car_id) >> escape_down)
 
             # Fully blocked state for NS cars
             barriers_up = And([BarrierAt(car.x, car.y - i) for i in range(1, car.y + 1)])
             barriers_down = And([BarrierAt(car.x, car.y + i) for i in range(1, grid_size - car.y)])
             
             fully_blocked_by_barriers = And(barriers_up, barriers_down)
-            E.add_constraint(fully_blocked_by_barriers >> ~EscapeForwards(car.car_id))
-            E.add_constraint(fully_blocked_by_barriers >> ~EscapeBackwards(car.car_id))
+            enc.add_constraint(fully_blocked_by_barriers >> ~EscapeForwards(car.car_id))
+            enc.add_constraint(fully_blocked_by_barriers >> ~EscapeBackwards(car.car_id))
+
+    # Redefine propositions here for building final constraints
+    Orientation, CarAt, BarrierAt, Empty, EscapeForwards, EscapeBackwards, Car, Barrier = define_propositions(enc)
 
     # Define a winning state: All cars can escape
     all_cars_escape = And([EscapeForwards(car.car_id) | EscapeBackwards(car.car_id) for car in cars])
@@ -175,16 +178,30 @@ def example_theory(grid_size, cars, barriers):
         And([BarrierAt(car.x, car.y + i) for i in range(1, grid_size - car.y)])
     ]) for car in cars])
 
-    E.add_constraint(all_cars_escape)
-    E.add_constraint(~any_car_blocked)
+    enc.add_constraint(all_cars_escape)
+    enc.add_constraint(~any_car_blocked)
 
-    return E
+    return enc
 
 
+# docker build -t parking-jam-3d .
+# docker run -it --rm parking-jam-3d /bin/bash
 
 def is_winning_state(grid_size, cars, barriers):
+    # Create a fresh encoding for this state
+    enc = Encoding()
+    Orientation, CarAt, BarrierAt, Empty, EscapeForwards, EscapeBackwards, Car, Barrier = define_propositions(enc)
+
+    # Add the car and barrier positions/orientations to the encoding
+    for car in cars:
+        enc.add_constraint(CarAt(car.x, car.y))
+        enc.add_constraint(Orientation(car.car_id, car.orientation))
+
+    for barrier in barriers:
+        enc.add_constraint(BarrierAt(barrier.x, barrier.y))
+
     # Compile constraints
-    T = example_theory(grid_size, cars, barriers)
+    T = example_theory(grid_size, cars, barriers, enc)
     T = T.compile()
 
     # Check satisfiability
@@ -219,7 +236,6 @@ def is_winning_state(grid_size, cars, barriers):
 # docker build -t parking-jam-3d .
 # docker run -it --rm parking-jam-3d /bin/bash
 
-
 def display_grid(grid, cars, barriers):
     """
     Display the grid with car and barrier positions.
@@ -248,7 +264,8 @@ def generate_set_board(size, car_list, barrier_list):
     """
     Generate a board with a set list of cars and barriers, and tie it to the propositions.
     """
-    global cars, barriers
+    # Note: We will not add constraints to a global encoding here anymore
+    # since we now do that fresh in is_winning_state().
     grid = [[0 for _ in range(size)] for _ in range(size)]
     cars = []
     barriers = []
@@ -258,34 +275,34 @@ def generate_set_board(size, car_list, barrier_list):
         car_id, x, y, orientation = car_data
         if grid[y][x] == 0:  # Ensure the cell is empty
             grid[y][x] = car_id
-            new_car = Car(car_id, x, y, orientation)
-            cars.append(new_car)
-            
-            # Add the car's position and orientation to the encoding
-            E.add_constraint(CarAt(x, y))
-            E.add_constraint(Orientation(car_id, orientation))
+            # Using a simple object instead of the proposition directly here
+            CarObj = type('CarObj', (object,), {})
+            c = CarObj()
+            c.car_id = car_id
+            c.x = x
+            c.y = y
+            c.orientation = orientation
+            cars.append(c)
 
     # Add barriers from the provided barrier list
     for barrier_data in barrier_list:
         x, y = barrier_data
         if grid[y][x] == 0:  # Ensure the cell is empty
             grid[y][x] = -1
-            new_barrier = Barrier(x, y)
-            barriers.append(new_barrier)
-            
-
-            # Add the barrier's position to the encoding
-            E.add_constraint(BarrierAt(x, y))
+            BarrierObj = type('BarrierObj', (object,), {})
+            b = BarrierObj()
+            b.x = x
+            b.y = y
+            barriers.append(b)
 
     return grid, cars, barriers
-
 
 
 def generate_random_board(size, num_cars, num_barriers):
     """
     Generate a random board with cars and barriers, and tie it to the propositions.
     """
-    global cars, barriers
+    # Again, we won't add constraints to a global encoding here.
     grid = [[0 for _ in range(size)] for _ in range(size)]
     cars = []
     barriers = []
@@ -297,11 +314,13 @@ def generate_random_board(size, num_cars, num_barriers):
             orientation = random.choice(['NS', 'EW'])
             if grid[y][x] == 0:  # Empty cell
                 grid[y][x] = car_id
-                cars.append(Car(car_id, x, y, orientation))
-
-                # Add the car's position to the encoding
-                E.add_constraint(CarAt(x, y))
-                E.add_constraint(Orientation(car_id, orientation))
+                CarObj = type('CarObj', (object,), {})
+                c = CarObj()
+                c.car_id = car_id
+                c.x = x
+                c.y = y
+                c.orientation = orientation
+                cars.append(c)
                 break
 
     # Add barriers
@@ -310,13 +329,18 @@ def generate_random_board(size, num_cars, num_barriers):
             x, y = random.randint(0, size - 1), random.randint(0, size - 1)
             if grid[y][x] == 0:  # Empty cell
                 grid[y][x] = -1
-                barriers.append(Barrier(x, y))
-
-                # Add the barrier's position to the encoding
-                E.add_constraint(BarrierAt(x, y))
+                BarrierObj = type('BarrierObj', (object,), {})
+                b = BarrierObj()
+                b.x = x
+                b.y = y
+                barriers.append(b)
                 break
 
     return grid, cars, barriers
+
+
+# docker build -t parking-jam-3d .
+# docker run -it --rm parking-jam-3d /bin/bash
 
 def display_solution(grid, cars, barriers, grid_size):
     """
@@ -402,18 +426,22 @@ def display_solution(grid, cars, barriers, grid_size):
     print("All cars have escaped! Winning state achieved.")
 
 
-if __name__ == "__main__":
-    import random
+# docker build -t parking-jam-3d .
+# docker run -it --rm parking-jam-3d /bin/bash
 
+if __name__ == "__main__":
     def main():
         while True:
             # Prompt user for grid size, number of cars, and barriers
-            grid_size = 10  # You can adjust this as needed
-            num_cars = 13  # Number of cars
-            num_barriers = 13  # Number of barriers
+            grid_size = 5  # Adjust as needed
+            num_cars = 5   # Number of cars
+            num_barriers = 6 # Number of barriers
 
-            if ((num_cars + num_barriers)>grid_size**2):
-                return ("Not enough spaces on grid for cars and barriers")
+            if ((num_cars + num_barriers) > grid_size**2):
+                print("Not enough spaces on grid for cars and barriers.")
+                # Since it doesn't make sense to continue if the grid cannot be formed,
+                # we can ask again or break. For now, let's break.
+                break
 
             # Generate random grid
             grid, cars, barriers = generate_random_board(size=grid_size, num_cars=num_cars, num_barriers=num_barriers)
@@ -433,7 +461,7 @@ if __name__ == "__main__":
             user_input = input("\nDo you want to generate another random grid? (yes/no): ").strip().lower()
             if user_input != "yes":
                 print("Exiting the program. Goodbye!")
-            break
+                break
                 
     # Run the main function
     main()
