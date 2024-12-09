@@ -401,7 +401,6 @@ if __name__ == "__main__":
     import random
 
     def main():
-        while True:
             
             # Uncomment this to use randomly generated grids
             """
