@@ -422,7 +422,7 @@ if __name__ == "__main__":
 
 
             # Select an example by changing this variable manually
-            example_number = 10  # Change this number to 1 - 10
+            example_number = 1  # Change this number to 1 - 9
 
             # Fetch the selected example
             selected_example = examples[example_number - 1]
