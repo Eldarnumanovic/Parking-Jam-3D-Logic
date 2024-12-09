@@ -111,17 +111,6 @@ examples = [
         ]
     },
     {
-        "size": 8,
-        "car_list": [
-            (1, 0, 0, 'EW'),  # Car 1 is trapped in the corner
-            (2, 7, 7, 'NS')   # Car 2 is trapped in the opposite corner
-        ],
-        "barrier_list": [
-            (1, 0), (0, 1),  # Barriers around Car 1
-            (6, 7), (7, 6)   # Barriers around Car 2
-        ]
-    },
-    {
         "size": 12,
         "car_list": [
             (1, 6, 6, 'EW'),  # Car 1 is surrounded by barriers
