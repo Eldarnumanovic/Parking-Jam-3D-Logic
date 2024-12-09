@@ -18,7 +18,7 @@ class Orientation:
         """
         Represents the orientation of a car.
         direction: 'NS' for North/South or 'EW' for East/West
-        
+        N is always forwards for NS cars, E is forwards for EW Cars
         """
         self.car_id = car_id
         self.direction = direction
@@ -53,7 +53,7 @@ class BarrierAt:
         return f"BarrierAt({self.x},{self.y})"
 
 
-# Constraints
+
 @proposition(E)
 class Empty:
     def __init__(self, x, y):
@@ -122,7 +122,9 @@ class Barrier:
 #  There should be at least 10 variables, and a sufficiently large formula to describe it (>50 operators).
 #  This restriction is fairly minimal, and if there is any concern, reach out to the teaching staff to clarify
 #  what the expectations are.
-def example_theory(grid_size, cars, barriers):
+
+
+def example_theory(grid_size, cars):
     """
     Define the constraints for the parking jam game, ensuring that the board state
     determines if all cars can escape or if any car is completely blocked.
@@ -132,6 +134,8 @@ def example_theory(grid_size, cars, barriers):
         for y in range(grid_size):
             E.add_constraint(Empty(x, y) >> (~CarAt(x, y) & ~BarrierAt(x, y)))
 
+
+    # loop through cars list and add constraints for each one
     for car in cars:
         if car.orientation == 'EW':
             # Escape constraints for EW cars
@@ -186,7 +190,7 @@ def example_theory(grid_size, cars, barriers):
 
 def is_winning_state(grid_size, cars, barriers):
     # Compile constraints
-    T = example_theory(grid_size, cars, barriers)
+    T = example_theory(grid_size, cars)
     T = T.compile()
 
     # Check satisfiability
